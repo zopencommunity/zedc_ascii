@@ -1,5 +1,7 @@
 #include "zlib.h"
 #include <stdio.h>
+#include <string.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,6 +23,9 @@ int __inflateBackInit_orig (z_streamp strm, int windowBits,
                                          const char *version,
                                          int stream_size) __asm("inflateBackInit_");
 
+const char *  __zlibVersion_orig (void) __asm("zlibVersion");
+
+static char version_ascii[15] = {0};
 
 int ZEXPORT __deflateInit_ascii(strm, level, version, stream_size)
     z_streamp strm;
@@ -28,10 +33,11 @@ int ZEXPORT __deflateInit_ascii(strm, level, version, stream_size)
     const char *version;
     int stream_size;
 {
-    fprintf(stderr, "Wrapper called. __deflateInit_ascii\n");
-#pragma convert("IBM-1047")
-    int ret = __deflateInit_orig(strm, level, version, stream_size);
-#pragma convert(pop)
+    char versionStr[15];
+    strcpy(versionStr, version);
+    __a2e_s(versionStr);
+
+    int ret = __deflateInit_orig(strm, level, versionStr, stream_size);
     return ret;
 }
 
@@ -41,10 +47,11 @@ int ZEXPORT __inflateInit_ascii(strm, version, stream_size)
     const char *version;
     int stream_size;
 {
-    fprintf(stderr, "Wrapper called __inflateInit_ascii\n");
-#pragma convert("IBM-1047")
-    int ret = __inflateInit_orig(strm, version, stream_size);
-#pragma convert(pop)
+    char versionStr[15];
+    strcpy(versionStr, version);
+    __a2e_s(versionStr);
+
+    int ret = __inflateInit_orig(strm, versionStr, stream_size);
     return ret;
 }
 
@@ -64,19 +71,8 @@ int ZEXPORT __deflateInit2_ascii(strm, level, method, windowBits, memLevel, stra
     strcpy(versionStr, version);
     __a2e_s(versionStr);
 
-    fprintf(stderr, "Wrapper called. __deflateInit2_ascii \n");
-    
-    fprintf(stderr,"level %d\n", level);
-    fprintf(stderr,"method %d\n", method);
-    fprintf(stderr,"windowBits %d\n", windowBits);
-    fprintf(stderr, "memlevel %d\n", memLevel);
-    fprintf(stderr,"strategy %d\n", strategy);
-    fprintf(stderr,"stream_size %d\n", stream_size);
-    fprintf(stderr, "version %s\n", version);
-
     int ret = __deflateInit2_orig(strm, level, method, windowBits, memLevel, strategy,
                   versionStr, stream_size);
-    fprintf(stderr, "__deflateInit2_ascii returned %d\n", ret);
     return ret;
 }
 
@@ -88,11 +84,12 @@ int ZEXPORT __inflateInit2_ascii(strm, windowBits, version, stream_size)
     const char *version;
     int stream_size;
 {
-    fprintf(stderr, "Wrapper called. __inflateInit2_ascii\n");
-#pragma convert("IBM-1047")
-	int ret = __inflateInit2_orig(strm, windowBits, version, stream_size);
-#pragma convert(pop)
-	return ret;
+    char versionStr[15];
+    strcpy(versionStr, version);
+    __a2e_s(versionStr);
+
+    int ret = __inflateInit2_orig(strm, windowBits, versionStr, stream_size);
+    return ret;
 }
 
 
@@ -103,10 +100,38 @@ int ZEXPORT __inflateBackInit_ascii(strm, windowBits, window, version, stream_si
     const char *version;
     int stream_size;
 {
-    fprintf(stderr, "Wrapper called. __inflateBackInit_ascii\n");
-#pragma convert("IBM-1047")
-   int ret = __inflateBackInit_orig(strm, windowBits, window, version, stream_size);
-#pragma convert(pop)
+    char versionStr[15];
+    strcpy(versionStr, version);
+    __a2e_s(versionStr);
+
+    int ret = __inflateBackInit_orig(strm, windowBits, window, versionStr, stream_size);
+    return ret;
+}
+
+
+const char * ZEXPORT __zlibVersion_ascii(void)
+{
+    static int init = 0;
+    
+    if(!init)
+    {
+      strcpy(version_ascii, __zlibVersion_orig());
+      __e2a_s(version_ascii);
+
+      const char* suffix = "-zEDC";
+      size_t suffix_len = strlen(suffix);
+
+      char* pos = strstr(version_ascii, suffix);
+
+      if (pos != NULL) {
+        if (pos + suffix_len == version_ascii + strlen(version_ascii)) {
+          *pos = '\0'; 
+	}
+      }
+
+      init = 1;
+    }
+    return version_ascii;
 }
 
 #ifdef __cplusplus
