@@ -132,7 +132,7 @@ const char * ZEXPORT __zlibVersion_ascii(void)
       strcpy(version_ascii, __zlibVersion_orig());
       __e2a_s(version_ascii);
 
-      const char* suffix = "-zEDC";
+      const char* suffix = "-zEDC";  //Remove zEDC suffix if present
       size_t suffix_len = strlen(suffix);
 
       char* pos = strstr(version_ascii, suffix);
