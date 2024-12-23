@@ -27,6 +27,20 @@ const char *  __zlibVersion_orig (void) __asm("zlibVersion");
 
 static char version_ascii[15] = {0};
 
+  /* For consistency deflateInit()/inflateInit() call compares zlib library version
+   * that is defined in the library with the version defined in the header zlib.h
+   * (ZLIB_VERSION). It works fine for zlib-based program that is built in EBCDIC
+   * mode, but for ASCII program we get the error Z_VERSION_ERROR. The reason is
+   * that IBM zlib library is built in EBCDIC mode and all string literals that are
+   * used in the library are saved in EBCDIC encoding, but when we use zlib.h header
+   * in ASCII program, all string literals from the header are converted to ASCII
+   * encoding. Such string with library version in ASCII encoding is passed into the
+   * internal function deflateInit_()/inflateInit_() (see zlib.h) and, when that
+   * function is trying to compare the strings with the same content but in different
+   * encodings, it returns the error Z_VERSION_ERROR. To avoid such behavior we can
+   * convert "version" variable to EBSIDIC mode before passing to zedc functions.  (see how
+   * the function deflateInit()/inflateInit() is defined in zlib.h). */
+
 int ZEXPORT __deflateInit_ascii(strm, level, version, stream_size)
     z_streamp strm;
     int level;
