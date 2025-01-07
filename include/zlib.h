@@ -1,11 +1,6 @@
 #ifndef ZOS_ZLIB_H_
 #define ZOS_ZLIB_H_
 
-#include "zos-macros.h"
-
-#define __XPLAT 1
-
-
 #undef deflateInit_
 #define deflateInit_ __deflateInit_replaced
 #undef inflateInit_
@@ -32,39 +27,39 @@ extern "C" {
 #endif
 
 
-__Z_EXPORT ZEXTERN int __deflateInit_ascii OF((z_streamp strm, int level,
+extern int __deflateInit_ascii OF((z_streamp strm, int level,
                                      const char *version, int stream_size));
-__Z_EXPORT ZEXTERN int __inflateInit_ascii OF((z_streamp strm,
+extern int __inflateInit_ascii OF((z_streamp strm,
                                      const char *version, int stream_size));
-__Z_EXPORT ZEXTERN int __deflateInit2_ascii OF((z_streamp strm, int  level, int  method,
+extern int __deflateInit2_ascii OF((z_streamp strm, int  level, int  method,
                                       int windowBits, int memLevel,
                                       int strategy, const char *version,
                                       int stream_size));
-__Z_EXPORT ZEXTERN int __inflateInit2_ascii OF((z_streamp strm, int  windowBits,
+extern int __inflateInit2_ascii OF((z_streamp strm, int  windowBits,
                                       const char *version, int stream_size));
-__Z_EXPORT ZEXTERN int __inflateBackInit_ascii OF((z_streamp strm, int windowBits,
+extern int __inflateBackInit_ascii OF((z_streamp strm, int windowBits,
                                          unsigned char FAR *window,
                                          const char *version,
                                          int stream_size));
 
-__Z_EXPORT ZEXTERN const char *  __zlibVersion_ascii OF((void));
+extern const char *  __zlibVersion_ascii OF((void));
 
-__Z_EXPORT ZEXTERN int deflateInit_ OF((z_streamp strm, int level,
+extern int deflateInit_ OF((z_streamp strm, int level,
                                      const char *version, int stream_size)) __asm("__deflateInit_ascii");
-__Z_EXPORT ZEXTERN int inflateInit_ OF((z_streamp strm,
+extern int inflateInit_ OF((z_streamp strm,
                                      const char *version, int stream_size)) __asm("__inflateInit_ascii");
-__Z_EXPORT ZEXTERN int deflateInit2_ OF((z_streamp strm, int  level, int  method,
+extern int deflateInit2_ OF((z_streamp strm, int  level, int  method,
                                       int windowBits, int memLevel,
                                       int strategy, const char *version,
                                       int stream_size)) __asm("__deflateInit2_ascii");
-__Z_EXPORT ZEXTERN int inflateInit2_ OF((z_streamp strm, int  windowBits,
+extern int inflateInit2_ OF((z_streamp strm, int  windowBits,
                                       const char *version, int stream_size)) __asm("__inflateInit2_ascii");
-__Z_EXPORT ZEXTERN int inflateBackInit_ OF((z_streamp strm, int windowBits,
+extern int inflateBackInit_ OF((z_streamp strm, int windowBits,
                                          unsigned char FAR *window,
                                          const char *version,
                                          int stream_size)) __asm("__inflateBackInit_ascii");
 
-__Z_EXPORT ZEXTERN const char *  zlibVersion OF((void)) __asm("__zlibVersion_ascii");
+extern const char *  zlibVersion OF((void)) __asm("__zlibVersion_ascii");
 
 #if defined(__cplusplus)
 }

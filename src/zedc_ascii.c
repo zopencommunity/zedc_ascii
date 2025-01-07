@@ -1,6 +1,7 @@
 #include "zlib.h"
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +42,7 @@ static char version_ascii[15] = {0};
    * convert "version" variable to EBSIDIC mode before passing to zedc functions.  (see how
    * the function deflateInit()/inflateInit() is defined in zlib.h). */
 
-int ZEXPORT __deflateInit_ascii(strm, level, version, stream_size)
+int __deflateInit_ascii(strm, level, version, stream_size)
     z_streamp strm;
     int level;
     const char *version;
@@ -56,7 +57,7 @@ int ZEXPORT __deflateInit_ascii(strm, level, version, stream_size)
 }
 
 
-int ZEXPORT __inflateInit_ascii(strm, version, stream_size)
+int __inflateInit_ascii(strm, version, stream_size)
     z_streamp strm;
     const char *version;
     int stream_size;
@@ -70,7 +71,7 @@ int ZEXPORT __inflateInit_ascii(strm, version, stream_size)
 }
 
 
-int ZEXPORT __deflateInit2_ascii(strm, level, method, windowBits, memLevel, strategy,
+int __deflateInit2_ascii(strm, level, method, windowBits, memLevel, strategy,
                   version, stream_size)
     z_streamp strm;
     int  level;
@@ -92,7 +93,7 @@ int ZEXPORT __deflateInit2_ascii(strm, level, method, windowBits, memLevel, stra
 
 
 
-int ZEXPORT __inflateInit2_ascii(strm, windowBits, version, stream_size)
+int __inflateInit2_ascii(strm, windowBits, version, stream_size)
     z_streamp strm;
     int windowBits;
     const char *version;
@@ -107,7 +108,7 @@ int ZEXPORT __inflateInit2_ascii(strm, windowBits, version, stream_size)
 }
 
 
-int ZEXPORT __inflateBackInit_ascii(strm, windowBits, window, version, stream_size)
+int __inflateBackInit_ascii(strm, windowBits, window, version, stream_size)
     z_streamp strm;
     int windowBits;
     unsigned char FAR *window;
@@ -123,7 +124,7 @@ int ZEXPORT __inflateBackInit_ascii(strm, windowBits, window, version, stream_si
 }
 
 
-const char * ZEXPORT __zlibVersion_ascii(void)
+const char * __zlibVersion_ascii(void)
 {
     static int init = 0;
     
