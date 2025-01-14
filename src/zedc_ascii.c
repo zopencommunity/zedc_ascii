@@ -48,11 +48,10 @@ int __deflateInit_ascii(strm, level, version, stream_size)
     const char *version;
     int stream_size;
 {
-    char versionStr[15];
-    strcpy(versionStr, version);
-    __a2e_s(versionStr);
-
-    int ret = __deflateInit_orig(strm, level, versionStr, stream_size);
+    (void)version;
+#pragma convert("IBM-1047")
+    int ret = __deflateInit_orig(strm, level, ZLIB_VERSION, stream_size);
+#pragma convert(pop)
     return ret;
 }
 
@@ -62,11 +61,10 @@ int __inflateInit_ascii(strm, version, stream_size)
     const char *version;
     int stream_size;
 {
-    char versionStr[15];
-    strcpy(versionStr, version);
-    __a2e_s(versionStr);
-
-    int ret = __inflateInit_orig(strm, versionStr, stream_size);
+    (void)version;
+#pragma convert("IBM-1047")
+    int ret = __inflateInit_orig(strm, ZLIB_VERSION, stream_size);
+#pragma convert(pop)
     return ret;
 }
 
@@ -82,12 +80,11 @@ int __deflateInit2_ascii(strm, level, method, windowBits, memLevel, strategy,
     const char *version;
     int stream_size;
 {
-    char versionStr[15];
-    strcpy(versionStr, version);
-    __a2e_s(versionStr);
-
+    (void)version;
+#pragma convert("IBM-1047")
     int ret = __deflateInit2_orig(strm, level, method, windowBits, memLevel, strategy,
-                  versionStr, stream_size);
+                  ZLIB_VERSION, stream_size);
+#pragma convert(pop)
     return ret;
 }
 
@@ -99,11 +96,10 @@ int __inflateInit2_ascii(strm, windowBits, version, stream_size)
     const char *version;
     int stream_size;
 {
-    char versionStr[15];
-    strcpy(versionStr, version);
-    __a2e_s(versionStr);
-
-    int ret = __inflateInit2_orig(strm, windowBits, versionStr, stream_size);
+    (void)version;
+#pragma convert("IBM-1047")
+    int ret = __inflateInit2_orig(strm, windowBits, ZLIB_VERSION, stream_size);
+#pragma convert(pop)
     return ret;
 }
 
@@ -115,11 +111,10 @@ int __inflateBackInit_ascii(strm, windowBits, window, version, stream_size)
     const char *version;
     int stream_size;
 {
-    char versionStr[15];
-    strcpy(versionStr, version);
-    __a2e_s(versionStr);
-
-    int ret = __inflateBackInit_orig(strm, windowBits, window, versionStr, stream_size);
+    (void)version;
+#pragma convert("IBM-1047")
+    int ret = __inflateBackInit_orig(strm, windowBits, window, ZLIB_VERSION, stream_size);
+#pragma convert(pop)
     return ret;
 }
 
