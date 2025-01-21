@@ -26,7 +26,21 @@ int __inflateBackInit_orig (z_streamp strm, int windowBits,
 
 const char *  __zlibVersion_orig (void) __asm("zlibVersion");
 
+int __deflate_orig (z_streamp strm, int flush) __asm("deflate");
+int __inflate_orig (z_streamp strm, int flush) __asm("inflate");
+int __deflateEnd_orig (z_streamp strm) __asm("DEEND");
+int __inflateEnd_orig (z_streamp strm) __asm("INEND");
+int __deflateReset_orig (z_streamp strm) __asm("deflateReset");
+int __inflateReset_orig (z_streamp strm) __asm("inflateReset");
+
 static char version_ascii[15] = {0};
+
+void convert_message_to_ascii(z_streamp strm)
+{
+     if(strm->msg != NULL) {
+        __e2a_s(strm->msg);    
+     }
+}
 
   /* For consistency deflateInit()/inflateInit() call compares zlib library version
    * that is defined in the library with the version defined in the header zlib.h
@@ -52,6 +66,7 @@ int __deflateInit_ascii(strm, level, version, stream_size)
 #pragma convert("IBM-1047")
     int ret = __deflateInit_orig(strm, level, ZLIB_VERSION, stream_size);
 #pragma convert(pop)
+    convert_message_to_ascii(strm);
     return ret;
 }
 
@@ -65,6 +80,7 @@ int __inflateInit_ascii(strm, version, stream_size)
 #pragma convert("IBM-1047")
     int ret = __inflateInit_orig(strm, ZLIB_VERSION, stream_size);
 #pragma convert(pop)
+    convert_message_to_ascii(strm);
     return ret;
 }
 
@@ -85,6 +101,7 @@ int __deflateInit2_ascii(strm, level, method, windowBits, memLevel, strategy,
     int ret = __deflateInit2_orig(strm, level, method, windowBits, memLevel, strategy,
                   ZLIB_VERSION, stream_size);
 #pragma convert(pop)
+    convert_message_to_ascii(strm);
     return ret;
 }
 
@@ -100,6 +117,7 @@ int __inflateInit2_ascii(strm, windowBits, version, stream_size)
 #pragma convert("IBM-1047")
     int ret = __inflateInit2_orig(strm, windowBits, ZLIB_VERSION, stream_size);
 #pragma convert(pop)
+    convert_message_to_ascii(strm);
     return ret;
 }
 
@@ -115,6 +133,7 @@ int __inflateBackInit_ascii(strm, windowBits, window, version, stream_size)
 #pragma convert("IBM-1047")
     int ret = __inflateBackInit_orig(strm, windowBits, window, ZLIB_VERSION, stream_size);
 #pragma convert(pop)
+    convert_message_to_ascii(strm);
     return ret;
 }
 
@@ -142,6 +161,48 @@ const char * __zlibVersion_ascii(void)
       init = 1;
     }
     return version_ascii;
+}
+
+int __deflate_ascii (z_streamp strm, int flush)
+{
+    int ret = __deflate_orig(strm, flush);
+    convert_message_to_ascii(strm);
+    return ret;
+}
+
+int __inflate_ascii (z_streamp strm, int flush)
+{
+    int ret = __inflate_orig(strm, flush);
+    convert_message_to_ascii(strm);
+    return ret;
+}
+
+int __deflateEnd_ascii (z_streamp strm)
+{
+    int ret = __deflateEnd_orig(strm);
+    convert_message_to_ascii(strm);
+    return ret;
+}
+
+int __inflateEnd_ascii (z_streamp strm)
+{
+    int ret = __inflateEnd_orig(strm);
+    convert_message_to_ascii(strm);
+    return ret;
+}
+
+int __deflateReset_ascii (z_streamp strm)
+{
+    int ret = __deflateReset_orig(strm);
+    convert_message_to_ascii(strm);
+    return ret;
+}
+
+int __inflateReset_ascii (z_streamp strm)
+{
+    int ret = __inflateReset_orig(strm);
+    convert_message_to_ascii(strm);
+    return ret;
 }
 
 #ifdef __cplusplus
