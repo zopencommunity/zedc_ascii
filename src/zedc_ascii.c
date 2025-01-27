@@ -2,27 +2,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define DEFAULT_PARAM -99
+#define DEFLATE_THRESHOLD_VAR "_HZC_DEFLATE_THRESHOLD"
+#define INFLATE_THRESHOLD_VAR "_HZC_INFLATE_THRESHOLD"
+#define COMPRESSION_METHOD_VAR "_HZC_COMPRESSION_METHOD"
+#define COMPRESSION_METHOD_SOFTWARE "software"
+#define MIN_THRESHOLD 1
+#define MAX_THRESHOLD 9999999
 
 #pragma convert("IBM-1047")
 static char *version_ebsidic = ZLIB_VERSION;
 #pragma convert(pop)
-
-typedef struct initparams {
-  int level;
-  int method;
-  int windowBits;
-  int memLevel;
-  int strategy;
-  const char *version;
-  int stream_size;
-} InitParams_t;
-
 
 int __deflateInit_orig (z_streamp strm, int level, const char *version, int stream_size) __asm("DEIN");
 
@@ -50,42 +46,6 @@ int __inflateEnd_orig (z_streamp strm) __asm("INEND");
 int __deflateReset_orig (z_streamp strm) __asm("deflateReset");
 int __inflateReset_orig (z_streamp strm) __asm("inflateReset");
 
-
-void store_params(z_streamp strm, 
-    int  level,
-    int  method,
-    int  windowBits,
-    int  memLevel,
-    int  strategy,
-    char *version,
-    int stream_size)
-{
-    InitParams_t *p = calloc(1, sizeof(InitParams_t));
-    if (p != NULL) {
-        p->level = level;
-        p->method = method;
-        p->windowBits = windowBits;
-        p->memLevel = memLevel;
-        p->strategy = strategy;
-        p->version = version;
-        p->stream_size = stream_size;
-        strm->reserved = (uLong)p;
-    } else {
-        fprintf(stderr, "Memory allocation failed for store_params\n");
-    }
-}
-
-void free_params(z_streamp strm)
-{
-    InitParams_t *p = (InitParams_t*)strm->reserved;
-    free(p);
-    strm->reserved = 0;
-}
-
-void get_params(z_streamp strm, InitParams_t* param)
-{
-    memcpy(param, (InitParams_t*)strm->reserved, sizeof(InitParams_t));
-}
 
 void msg_to_ascii(z_streamp strm)
 {
@@ -117,13 +77,6 @@ int __deflateInit_ascii(strm, level, version, stream_size)
     (void)version;
     int ret = __deflateInit_orig(strm, level, version_ebsidic, stream_size);
     msg_to_ascii(strm);
-
-    if(ret == Z_OK)
-    {
-      store_params(strm, level, DEFAULT_PARAM, DEFAULT_PARAM, DEFAULT_PARAM, DEFAULT_PARAM,
-                  version_ebsidic, stream_size);
-    }
-
     return ret;
 }
 
@@ -136,13 +89,6 @@ int __inflateInit_ascii(strm, version, stream_size)
     (void)version;
     int ret = __inflateInit_orig(strm, version_ebsidic, stream_size);
     msg_to_ascii(strm);
-
-    if(ret == Z_OK)
-    {
-      store_params(strm, DEFAULT_PARAM, DEFAULT_PARAM, DEFAULT_PARAM, DEFAULT_PARAM, DEFAULT_PARAM,
-                  version_ebsidic, stream_size);
-    }
-
     return ret;
 }
 
@@ -163,11 +109,6 @@ int __deflateInit2_ascii(strm, level, method, windowBits, memLevel, strategy,
     int ret = __deflateInit2_orig(strm, level, method, windowBits, memLevel, strategy,
                   version_ebsidic, stream_size);
     msg_to_ascii(strm);
-    
-    if(ret == Z_OK) {
-      store_params(strm, level, method, windowBits, memLevel, strategy,
-                  version_ebsidic, stream_size);
-    }
 
     return ret;
 }
@@ -183,12 +124,6 @@ int __inflateInit2_ascii(strm, windowBits, version, stream_size)
     (void)version;
     int ret = __inflateInit2_orig(strm, windowBits, version_ebsidic, stream_size);
     msg_to_ascii(strm);
-
-    if(ret == Z_OK)
-    {
-      store_params(strm, DEFAULT_PARAM, DEFAULT_PARAM, windowBits, DEFAULT_PARAM, DEFAULT_PARAM,
-                  version_ebsidic, stream_size);
-    }
     return ret;
 }
 
@@ -215,7 +150,8 @@ int __deflate_ascii (z_streamp strm, int flush)
 
 int __inflate_ascii (z_streamp strm, int flush)
 {
-    int ret = __inflate_orig(strm, flush);
+    int ret;
+    ret = __inflate_orig(strm, flush);
     msg_to_ascii(strm);
     return ret;
 }
@@ -223,7 +159,6 @@ int __inflate_ascii (z_streamp strm, int flush)
 int __deflateEnd_ascii (z_streamp strm)
 {
     int ret;
-    free_params(strm);
     ret = __deflateEnd_orig(strm);
     msg_to_ascii(strm);
     return ret;
@@ -232,7 +167,6 @@ int __deflateEnd_ascii (z_streamp strm)
 int __inflateEnd_ascii (z_streamp strm)
 {
     int ret;
-    free_params(strm);
     ret = __inflateEnd_orig(strm);
     msg_to_ascii(strm);
     return ret;
@@ -241,40 +175,16 @@ int __inflateEnd_ascii (z_streamp strm)
 int __deflateReset_ascii (z_streamp strm)
 {
     int ret;
-    InitParams_t p;
-    get_params(strm, &p);
-
-    ret = __deflateEnd_ascii(strm);
-
-    if(ret != Z_OK)
-      return ret;
-
-    if(p.strategy != DEFAULT_PARAM) {
-        ret = __deflateInit2_ascii(strm, p.level, p.method, p.windowBits, p.memLevel, p.strategy, p.version, p.stream_size);
-    } else {  
-        ret = __deflateInit_ascii(strm, p.level, p.version, p.stream_size);
-    }
-
+    ret = __deflateReset_orig(strm);
+    msg_to_ascii(strm);
     return ret;
 }
 
 int __inflateReset_ascii (z_streamp strm)
 {
     int ret;
-    InitParams_t p;
-    get_params(strm, &p);
-    
-    ret = __inflateEnd_ascii(strm);
-
-    if(ret != Z_OK)
-      return ret;
-
-    if(p.windowBits != DEFAULT_PARAM) {
-        ret = __inflateInit2_ascii(strm, p.windowBits, p.version, p.stream_size);
-    } else {
-        ret = __inflateInit_ascii(strm, p.version, p.stream_size);
-    }
-
+    ret = __inflateReset_orig(strm);
+    msg_to_ascii(strm);
     return ret;
 }
 
@@ -295,6 +205,28 @@ const char * __zlibVersion_ascii(void) {
     return version_ascii;
 }
 
+__attribute__((constructor))
+void set_threshold_variable() {
+    const char *compression_method = getenv(COMPRESSION_METHOD_VAR);
+    if (compression_method != NULL && strcmp(compression_method, COMPRESSION_METHOD_SOFTWARE) == 0) {
+        return;
+    }
+
+    char value_str[12];
+    snprintf(value_str, sizeof(value_str), "%d", MIN_THRESHOLD);
+
+    if (getenv(DEFLATE_THRESHOLD_VAR) == NULL) {
+        if (setenv(DEFLATE_THRESHOLD_VAR, value_str, 1) != 0) {
+            fprintf(stderr, "Failed to set environment variable %s: %s\n", DEFLATE_THRESHOLD_VAR, strerror(errno));
+        }
+    }
+
+    if (getenv(INFLATE_THRESHOLD_VAR) == NULL) {
+        if (setenv(INFLATE_THRESHOLD_VAR, value_str, 1) != 0) {
+            fprintf(stderr, "Failed to set environment variable %s: %s\n", INFLATE_THRESHOLD_VAR, strerror(errno));
+        }
+    }
+}
 
 #ifdef __cplusplus
 }
