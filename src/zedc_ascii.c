@@ -50,7 +50,7 @@ int __inflateReset_orig (z_streamp strm) __asm("inflateReset");
 void msg_to_ascii(z_streamp strm)
 {
      if(strm->msg != NULL) {
-        __e2a_s(strm->msg);    
+//        __e2a_s(strm->msg);    
      }
 }
 
