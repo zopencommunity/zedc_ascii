@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,11 +48,53 @@ int __deflateReset_orig (z_streamp strm) __asm("deflateReset");
 int __inflateReset_orig (z_streamp strm) __asm("inflateReset");
 
 
+#define MSG_BUFFER_SIZE 256
+#define MSG_BUFFER_COUNT 4
+
+typedef struct {
+    char buffers[MSG_BUFFER_COUNT][MSG_BUFFER_SIZE];
+    int current;
+} thread_msg_t;
+
+static pthread_key_t msg_key;
+static pthread_once_t msg_key_once = PTHREAD_ONCE_INIT;
+
+static void msg_key_destroy(void *ptr) {
+    free(ptr);
+}
+
+static void msg_key_make(void) {
+    pthread_key_create(&msg_key, msg_key_destroy);
+}
+
 void msg_to_ascii(z_streamp strm)
 {
-     if(strm->msg != NULL) {
-//        __e2a_s(strm->msg);    
-     }
+    if (strm->msg == NULL) return;
+
+    pthread_once(&msg_key_once, msg_key_make);
+    thread_msg_t *msg_data = (thread_msg_t *)pthread_getspecific(msg_key);
+
+    if (msg_data == NULL) {
+        msg_data = (thread_msg_t *)calloc(1, sizeof(thread_msg_t));
+        if (msg_data == NULL) return;
+        pthread_setspecific(msg_key, msg_data);
+    }
+
+    /* Check if strm->msg already points to one of our buffers */
+    for (int i = 0; i < MSG_BUFFER_COUNT; ++i) {
+        if (strm->msg == msg_data->buffers[i]) {
+            return; /* Already converted */
+        }
+    }
+
+    /* Copy and convert */
+    char *buf = msg_data->buffers[msg_data->current];
+    strncpy(buf, strm->msg, MSG_BUFFER_SIZE - 1);
+    buf[MSG_BUFFER_SIZE - 1] = '\0';
+    __e2a_s(buf);
+    
+    strm->msg = buf;
+    msg_data->current = (msg_data->current + 1) % MSG_BUFFER_COUNT;
 }
 
   /* For consistency deflateInit()/inflateInit() call compares zlib library version
@@ -68,11 +111,7 @@ void msg_to_ascii(z_streamp strm)
    * convert "version" variable to EBSIDIC mode before passing to zedc functions.  (see how
    * the function deflateInit()/inflateInit() is defined in zlib.h). */
 
-int __deflateInit_ascii(strm, level, version, stream_size)
-    z_streamp strm;
-    int level;
-    const char *version;
-    int stream_size;
+int __deflateInit_ascii(z_streamp strm, int level, const char *version, int stream_size)
 {
     (void)version;
     int ret = __deflateInit_orig(strm, level, version_ebsidic, stream_size);
@@ -81,10 +120,7 @@ int __deflateInit_ascii(strm, level, version, stream_size)
 }
 
 
-int __inflateInit_ascii(strm, version, stream_size)
-    z_streamp strm;
-    const char *version;
-    int stream_size;
+int __inflateInit_ascii(z_streamp strm, const char *version, int stream_size)
 {
     (void)version;
     int ret = __inflateInit_orig(strm, version_ebsidic, stream_size);
@@ -93,19 +129,10 @@ int __inflateInit_ascii(strm, version, stream_size)
 }
 
 
-int __deflateInit2_ascii(strm, level, method, windowBits, memLevel, strategy,
-                  version, stream_size)
-    z_streamp strm;
-    int  level;
-    int  method;
-    int  windowBits;
-    int  memLevel;
-    int  strategy;
-    const char *version;
-    int stream_size;
+int __deflateInit2_ascii(z_streamp strm, int level, int method, int windowBits, int memLevel, int strategy,
+                  const char *version, int stream_size)
 {
     (void)version;
-
     int ret = __deflateInit2_orig(strm, level, method, windowBits, memLevel, strategy,
                   version_ebsidic, stream_size);
     msg_to_ascii(strm);
@@ -115,11 +142,7 @@ int __deflateInit2_ascii(strm, level, method, windowBits, memLevel, strategy,
 
 
 
-int __inflateInit2_ascii(strm, windowBits, version, stream_size)
-    z_streamp strm;
-    int windowBits;
-    const char *version;
-    int stream_size;
+int __inflateInit2_ascii(z_streamp strm, int windowBits, const char *version, int stream_size)
 {
     (void)version;
     int ret = __inflateInit2_orig(strm, windowBits, version_ebsidic, stream_size);
@@ -128,18 +151,14 @@ int __inflateInit2_ascii(strm, windowBits, version, stream_size)
 }
 
 
-int __inflateBackInit_ascii(strm, windowBits, window, version, stream_size)
-    z_streamp strm;
-    int windowBits;
-    unsigned char FAR *window;
-    const char *version;
-    int stream_size;
+int __inflateBackInit_ascii(z_streamp strm, int windowBits, unsigned char FAR *window, const char *version, int stream_size)
 {
     (void)version;
     int ret = __inflateBackInit_orig(strm, windowBits, window, version_ebsidic, stream_size);
     msg_to_ascii(strm);
     return ret;
 }
+
 
 int __deflate_ascii (z_streamp strm, int flush)
 {
@@ -190,9 +209,10 @@ int __inflateReset_ascii (z_streamp strm)
 
 const char * __zlibVersion_ascii(void) {
     static int init = 0;
-    static char version_ascii[15] = {0};
+    static char version_ascii[32] = {0};
     if (!init) {
-        strcpy(version_ascii, __zlibVersion_orig());
+        const char* orig_version = __zlibVersion_orig();
+        strncpy(version_ascii, orig_version, sizeof(version_ascii) - 1);
         __e2a_s(version_ascii);
         const char *suffix = "-zEDC";  // Remove zEDC suffix if present
         size_t suffix_len = strlen(suffix);

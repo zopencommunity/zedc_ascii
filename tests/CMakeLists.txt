@@ -6,34 +6,8 @@ project(tests)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Initialize a variable to store library paths
-set(LIBZZ_PATHS)
-
-# Add the fixed directory
-list(APPEND LIBZZ_PATHS /usr/lpp/hzc/lib/)
-
-# Retrieve the environment variable ZOPEN_OLD_LIBPATH and split it by ':'
-if(DEFINED ENV{ZOPEN_OLD_LIBPATH})
-    string(REPLACE ":" ";" ZOPEN_OLD_LIBPATH_LIST $ENV{ZOPEN_OLD_LIBPATH})
-    list(APPEND LIBZZ_PATHS ${ZOPEN_OLD_LIBPATH_LIST})
-endif()
-
-# Find the library 'libzz.a' in the specified paths
-set(LIBZZ_FOUND_PATH "")
-foreach(PATH ${LIBZZ_PATHS})
-    if(EXISTS "${PATH}/libzz.a")
-        set(LIBZZ_FOUND_PATH ${PATH})
-        break()
-    endif()
-endforeach()
-
-# Handle the case where the library is not found
-if(LIBZZ_FOUND_PATH)
-    message(STATUS "Found libzz.a in: ${LIBZZ_FOUND_PATH}")
-    link_directories(${LIBZZ_FOUND_PATH})
-else()
-    message(FATAL_ERROR "libzz.a not found in any of the specified paths")
-endif()
+# Link directories for libzz.a found in root CMakeLists.txt
+link_directories(${LIBZZ_FOUND_PATH})
 
 # Collect all test files in the folder
 file(GLOB TEST_SOURCES "*.c")
