@@ -6,9 +6,6 @@ project(tests)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Link directories for libzz.a found in root CMakeLists.txt
-link_directories(${LIBZZ_FOUND_PATH})
-
 # Collect all test files in the folder
 file(GLOB TEST_SOURCES "*.c")
 
@@ -20,8 +17,8 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     # Create a test executable
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     
-    # Link the zedc_ascii static library to the test
-    target_link_libraries(${TEST_NAME} zedc_ascii -lzz)
+    # Link the zedc_ascii static library and the absolute path of libzz.a
+    target_link_libraries(${TEST_NAME} zedc_ascii ${LIBZZ_FOUND_PATH}/libzz.a)
 endforeach()
 
 

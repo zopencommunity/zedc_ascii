@@ -72,7 +72,7 @@ static void msg_key_make(void) {
 
 void msg_to_ascii(z_streamp strm)
 {
-    if (strm->msg == NULL) return;
+    if (strm == NULL || strm->msg == NULL) return;
 
     if (pthread_once(&msg_key_once, msg_key_make) != 0 || msg_key_failed) {
         return;

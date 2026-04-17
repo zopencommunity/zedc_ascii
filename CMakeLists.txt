@@ -39,6 +39,9 @@ else()
     message(FATAL_ERROR "libzz.a not found in any of the specified paths")
 endif()
 
+# Set a literal placeholder for the installed .pc file
+set(ZEDC_LIB_PATH "@ZEDC_LIB_PATH@")
+
 # Generate the pkg-config file
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/zlib.pc.in"
@@ -54,11 +57,6 @@ install(
 
 add_subdirectory(src)
 add_subdirectory(tests)
-
-
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  SET(CMAKE_INSTALL_PREFIX "." CACHE PATH "install path" FORCE)
-endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 add_custom_target(check
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target run-tests
