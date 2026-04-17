@@ -1,27 +1,6 @@
-# Zedc_ascii
+# zedc_ascii
 
-No description available
-
-# Installation and Usage
-
-Use the zopen package manager ([QuickStart Guide](https://zopen.community/#/Guides/QuickStart)) to install:
-```bash
-zopen install zedc_ascii
-```
-
-# Building from Source
-
-1. Clone the repository:
-```bash
-git clone https://github.com/zopencommunity/zedc_ascii.git
-cd zedc_ascii
-```
-2. Build using zopen:
-```bash
-zopen build -vv
-```
-
-See the [zopen porting guide](https://zopen.community/#/Guides/Porting) for more details.
+The zlib data compression library provides in-memory compression and decompression functions, including integrity checks of the uncompressed data. A modified version of the zlib compression library is used by zEDC. The IBM-provided zlib compatible C library provides a set of wrapper functions that use zEDC compression when appropriate and when zEDC is not appropriate, software-based compression services are used.
 
 # Documentation
 
