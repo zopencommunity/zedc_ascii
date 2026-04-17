@@ -58,26 +58,35 @@ typedef struct {
 
 static pthread_key_t msg_key;
 static pthread_once_t msg_key_once = PTHREAD_ONCE_INIT;
+static int msg_key_failed = 0;
 
 static void msg_key_destroy(void *ptr) {
     free(ptr);
 }
 
 static void msg_key_make(void) {
-    pthread_key_create(&msg_key, msg_key_destroy);
+    if (pthread_key_create(&msg_key, msg_key_destroy) != 0) {
+        msg_key_failed = 1;
+    }
 }
 
 void msg_to_ascii(z_streamp strm)
 {
     if (strm->msg == NULL) return;
 
-    pthread_once(&msg_key_once, msg_key_make);
+    if (pthread_once(&msg_key_once, msg_key_make) != 0 || msg_key_failed) {
+        return;
+    }
+
     thread_msg_t *msg_data = (thread_msg_t *)pthread_getspecific(msg_key);
 
     if (msg_data == NULL) {
         msg_data = (thread_msg_t *)calloc(1, sizeof(thread_msg_t));
         if (msg_data == NULL) return;
-        pthread_setspecific(msg_key, msg_data);
+        if (pthread_setspecific(msg_key, msg_data) != 0) {
+            free(msg_data);
+            return;
+        }
     }
 
     /* Check if strm->msg already points to one of our buffers */
