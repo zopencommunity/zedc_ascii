@@ -6,35 +6,6 @@ project(tests)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Initialize a variable to store library paths
-set(LIBZZ_PATHS)
-
-# Add the fixed directory
-list(APPEND LIBZZ_PATHS /usr/lpp/hzc/lib/)
-
-# Retrieve the environment variable ZOPEN_OLD_LIBPATH and split it by ':'
-if(DEFINED ENV{ZOPEN_OLD_LIBPATH})
-    string(REPLACE ":" ";" ZOPEN_OLD_LIBPATH_LIST $ENV{ZOPEN_OLD_LIBPATH})
-    list(APPEND LIBZZ_PATHS ${ZOPEN_OLD_LIBPATH_LIST})
-endif()
-
-# Find the library 'libzz.a' in the specified paths
-set(LIBZZ_FOUND_PATH "")
-foreach(PATH ${LIBZZ_PATHS})
-    if(EXISTS "${PATH}/libzz.a")
-        set(LIBZZ_FOUND_PATH ${PATH})
-        break()
-    endif()
-endforeach()
-
-# Handle the case where the library is not found
-if(LIBZZ_FOUND_PATH)
-    message(STATUS "Found libzz.a in: ${LIBZZ_FOUND_PATH}")
-    link_directories(${LIBZZ_FOUND_PATH})
-else()
-    message(FATAL_ERROR "libzz.a not found in any of the specified paths")
-endif()
-
 # Collect all test files in the folder
 file(GLOB TEST_SOURCES "*.c")
 
@@ -46,8 +17,8 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     # Create a test executable
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     
-    # Link the zedc_ascii static library to the test
-    target_link_libraries(${TEST_NAME} zedc_ascii -lzz)
+    # Link the zedc_ascii static library and the absolute path of libzz.a
+    target_link_libraries(${TEST_NAME} zedc_ascii ${LIBZZ_FOUND_PATH}/libzz.a)
 endforeach()
 
 

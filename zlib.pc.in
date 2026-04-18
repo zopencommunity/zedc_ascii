@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+zedclibdir=@ZEDC_LIB_PATH@
+
+Name: zlib
+Description: zEDC-enabled zlib library with ASCII support for z/OS
+Version: 1.2.11
+Libs: -L${libdir} -lz -L${zedclibdir} -lzz
+Cflags: -I${includedir}
