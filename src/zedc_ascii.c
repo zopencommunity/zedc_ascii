@@ -49,10 +49,11 @@ int __inflateReset_orig (z_streamp strm) __asm("inflateReset");
 
 
 #define MSG_BUFFER_SIZE 256
-#define MSG_BUFFER_COUNT 4
+#define MSG_BUFFER_COUNT 8
 
 typedef struct {
-    char buffers[MSG_BUFFER_COUNT][MSG_BUFFER_SIZE];
+    const char *ebcdic_ptrs[MSG_BUFFER_COUNT];
+    char ascii_buffers[MSG_BUFFER_COUNT][MSG_BUFFER_SIZE];
     int current;
 } thread_msg_t;
 
@@ -89,21 +90,29 @@ void msg_to_ascii(z_streamp strm)
         }
     }
 
-    /* Check if strm->msg already points to one of our buffers */
+    /* Check if this EBCDIC pointer is already in our cache */
     for (int i = 0; i < MSG_BUFFER_COUNT; ++i) {
-        if (strm->msg == msg_data->buffers[i]) {
-            return; /* Already converted */
+        if (strm->msg == msg_data->ebcdic_ptrs[i]) {
+            strm->msg = msg_data->ascii_buffers[i];
+            return;
+        }
+        /* Also check if strm->msg already points to one of our ASCII buffers (idempotency) */
+        if (strm->msg == msg_data->ascii_buffers[i]) {
+            return;
         }
     }
 
-    /* Copy and convert */
-    char *buf = msg_data->buffers[msg_data->current];
+    /* Copy and convert new message into the next cache slot */
+    int idx = msg_data->current;
+    msg_data->ebcdic_ptrs[idx] = strm->msg;
+    char *buf = msg_data->ascii_buffers[idx];
+    
     strncpy(buf, strm->msg, MSG_BUFFER_SIZE - 1);
     buf[MSG_BUFFER_SIZE - 1] = '\0';
     __e2a_s(buf);
     
     strm->msg = buf;
-    msg_data->current = (msg_data->current + 1) % MSG_BUFFER_COUNT;
+    msg_data->current = (idx + 1) % MSG_BUFFER_COUNT;
 }
 
   /* For consistency deflateInit()/inflateInit() call compares zlib library version
@@ -216,21 +225,23 @@ int __inflateReset_ascii (z_streamp strm)
     return ret;
 }
 
-const char * __zlibVersion_ascii(void) {
-    static int init = 0;
-    static char version_ascii[32] = {0};
-    if (!init) {
-        const char* orig_version = __zlibVersion_orig();
-        strncpy(version_ascii, orig_version, sizeof(version_ascii) - 1);
-        __e2a_s(version_ascii);
-        const char *suffix = "-zEDC";  // Remove zEDC suffix if present
-        size_t suffix_len = strlen(suffix);
-        char *pos = strstr(version_ascii, suffix);
-        if (pos != NULL && pos + suffix_len == version_ascii + strlen(version_ascii)) {
-            *pos = '\0';
-        }
-        init = 1;
+static char version_ascii[32] = {0};
+static pthread_once_t version_once = PTHREAD_ONCE_INIT;
+
+static void version_init(void) {
+    const char* orig_version = __zlibVersion_orig();
+    strncpy(version_ascii, orig_version, sizeof(version_ascii) - 1);
+    __e2a_s(version_ascii);
+    const char *suffix = "-zEDC";  // Remove zEDC suffix if present
+    size_t suffix_len = strlen(suffix);
+    char *pos = strstr(version_ascii, suffix);
+    if (pos != NULL && pos + suffix_len == version_ascii + strlen(version_ascii)) {
+        *pos = '\0';
     }
+}
+
+const char * __zlibVersion_ascii(void) {
+    pthread_once(&version_once, version_init);
     return version_ascii;
 }
 
