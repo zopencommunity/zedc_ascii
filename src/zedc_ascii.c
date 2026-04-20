@@ -179,24 +179,29 @@ int __inflateReset_ascii (z_streamp strm)
 
 gzFile __gzopen_ascii(const char *path, const char *mode)
 {
-    char ebcdic_path[1024];
-    char ebcdic_mode[16];
-    strncpy(ebcdic_path, path, sizeof(ebcdic_path)-1);
-    ebcdic_path[sizeof(ebcdic_path)-1] = '\0';
+    if (path == NULL || mode == NULL) return NULL;
+    char *ebcdic_path = strdup(path);
+    char *ebcdic_mode = strdup(mode);
+    if (ebcdic_path == NULL || ebcdic_mode == NULL) {
+        free(ebcdic_path); free(ebcdic_mode);
+        return NULL;
+    }
     __a2e_s(ebcdic_path);
-    strncpy(ebcdic_mode, mode, sizeof(ebcdic_mode)-1);
-    ebcdic_mode[sizeof(ebcdic_mode)-1] = '\0';
     __a2e_s(ebcdic_mode);
-    return __gzopen_orig(ebcdic_path, ebcdic_mode);
+    gzFile ret = __gzopen_orig(ebcdic_path, ebcdic_mode);
+    free(ebcdic_path); free(ebcdic_mode);
+    return ret;
 }
 
 gzFile __gzdopen_ascii(int fd, const char *mode)
 {
-    char ebcdic_mode[16];
-    strncpy(ebcdic_mode, mode, sizeof(ebcdic_mode)-1);
-    ebcdic_mode[sizeof(ebcdic_mode)-1] = '\0';
+    if (mode == NULL) return NULL;
+    char *ebcdic_mode = strdup(mode);
+    if (ebcdic_mode == NULL) return NULL;
     __a2e_s(ebcdic_mode);
-    return __gzdopen_orig(fd, ebcdic_mode);
+    gzFile ret = __gzdopen_orig(fd, ebcdic_mode);
+    free(ebcdic_mode);
+    return ret;
 }
 
 char * __gzgets_ascii(gzFile file, char *buf, int len)
@@ -208,11 +213,13 @@ char * __gzgets_ascii(gzFile file, char *buf, int len)
 
 int __gzputs_ascii(gzFile file, const char *s)
 {
-    char ebcdic_s[4096];
-    strncpy(ebcdic_s, s, sizeof(ebcdic_s)-1);
-    ebcdic_s[sizeof(ebcdic_s)-1] = '\0';
+    if (s == NULL) return -1;
+    char *ebcdic_s = strdup(s);
+    if (ebcdic_s == NULL) return -1;
     __a2e_s(ebcdic_s);
-    return __gzputs_orig(file, ebcdic_s);
+    int ret = __gzputs_orig(file, ebcdic_s);
+    free(ebcdic_s);
+    return ret;
 }
 
 static char version_ascii[32] = {0};
@@ -241,8 +248,16 @@ void set_threshold_variable() {
     if (compression_method != NULL && strcmp(compression_method, COMPRESSION_METHOD_SOFTWARE) == 0) return;
     char value_str[12];
     snprintf(value_str, sizeof(value_str), "%d", MIN_THRESHOLD);
-    if (getenv(DEFLATE_THRESHOLD_VAR) == NULL) setenv(DEFLATE_THRESHOLD_VAR, value_str, 1);
-    if (getenv(INFLATE_THRESHOLD_VAR) == NULL) setenv(INFLATE_THRESHOLD_VAR, value_str, 1);
+    if (getenv(DEFLATE_THRESHOLD_VAR) == NULL) {
+        if (setenv(DEFLATE_THRESHOLD_VAR, value_str, 1) != 0) {
+            fprintf(stderr, "Failed to set environment variable %s: %s\n", DEFLATE_THRESHOLD_VAR, strerror(errno));
+        }
+    }
+    if (getenv(INFLATE_THRESHOLD_VAR) == NULL) {
+        if (setenv(INFLATE_THRESHOLD_VAR, value_str, 1) != 0) {
+            fprintf(stderr, "Failed to set environment variable %s: %s\n", INFLATE_THRESHOLD_VAR, strerror(errno));
+        }
+    }
 }
 
 #ifdef __cplusplus
