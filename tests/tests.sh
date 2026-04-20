@@ -34,12 +34,23 @@ test_compression()
 	fi
 }
 
+test_gzdopen()
+{
+	./gzdopen_test
+	if [ $? -eq 0 ]; then
+		test_passed
+	else
+		test_failed
+	fi
+}
+
 
 #################################################
 # RUN TESTS                                       #
 #################################################
 test_version
 test_compression
+test_gzdopen
 
 #################################################
 # RESULTS                                       #
